@@ -5,7 +5,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import date, timedelta
 import streamlit as st
-import json
 
 # Add the current directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -23,6 +22,7 @@ class Customer(Base):
     remaining_changes = Column(Integer)
     family_members = Column(JSON)
     validity_period = Column(Integer)
+    plan = Column(String)
 
 class ChangeLog(Base):
     __tablename__ = 'changes_log'
@@ -36,11 +36,18 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-def register_customer(name, contact, photo, family_members):
+def register_customer(name, contact, photo, family_members, plan):
     subscription_start_date = date.today()
-    remaining_changes = 3
-    validity_period = 90  # days
-    family_members_json = json.dumps(family_members)
+    
+    # Set remaining changes and validity period based on the selected plan
+    if plan == "3 Glass Changes in 3 Months - 3000 Rs":
+        remaining_changes = 3
+        validity_period = 90
+    elif plan == "6 Glass Changes in 6 Months - 6000 Rs":
+        remaining_changes = 6
+        validity_period = 180
+
+    family_members_list = [member.strip() for member in family_members.split(',')]
 
     new_customer = Customer(
         name=name,
@@ -48,8 +55,9 @@ def register_customer(name, contact, photo, family_members):
         photo_id=photo,
         subscription_start_date=subscription_start_date,
         remaining_changes=remaining_changes,
-        family_members=family_members_json,
-        validity_period=validity_period
+        family_members=family_members_list,
+        validity_period=validity_period,
+        plan=plan
     )
     session.add(new_customer)
     session.commit()
@@ -76,7 +84,7 @@ def verify_and_log_change(customer_id, family_member_id=None):
     session.add(new_change)
     customer.remaining_changes -= 1
     session.commit()
-    st.success("Glass change logged successfully")
+    st.success("Glass change logged successfully!")
 
 def get_customers():
     customers = session.query(Customer).all()
@@ -95,7 +103,8 @@ def display_customers():
             "Subscription Start Date": customer.subscription_start_date,
             "Remaining Changes": customer.remaining_changes,
             "Validity Period": customer.validity_period,
-            "Family Members": json.loads(customer.family_members)
+            "Plan": customer.plan,
+            "Family Members": customer.family_members
         })
 
 # Streamlit UI
@@ -109,15 +118,12 @@ if choice == "Register Customer":
     name = st.text_input("Name")
     contact = st.text_input("Contact")
     photo = st.file_uploader("Upload Photo ID", type=["jpg", "jpeg", "png"])
-    family_members = st.text_area("Family Members (JSON format)")
+    family_members = st.text_area("Family Members (comma-separated)")
+    plan = st.selectbox("Select Plan", ["3 Glass Changes in 3 Months - 3000 Rs", "6 Glass Changes in 6 Months - 6000 Rs"])
 
     if st.button("Register"):
-        if name and contact and photo and family_members:
-            try:
-                family_members_list = json.loads(family_members)
-                register_customer(name, contact, photo.read(), family_members_list)
-            except json.JSONDecodeError:
-                st.error("Invalid JSON format for family members. Please check your input.")
+        if name and contact and photo and family_members and plan:
+            register_customer(name, contact, photo.read(), family_members, plan)
         else:
             st.error("Please fill all fields")
 
