@@ -1,36 +1,17 @@
 import sys
 import os
 import json
-from sqlalchemy import create_engine, Column, Integer, String, Date, BLOB, JSON
-from sqlalchemy.ext.declarative import declarative_base
+import pandas as pd
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from datetime import date, timedelta
 import streamlit as st
+from database_setup import Base, Customer, ChangeLog
 
 # Add the current directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Database setup
-Base = declarative_base()
-
-class Customer(Base):
-    __tablename__ = 'customers'
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    contact = Column(String)
-    photo_id = Column(BLOB, nullable=True)
-    subscription_start_date = Column(Date)
-    remaining_changes = Column(Integer)
-    family_members = Column(JSON, nullable=True)
-    validity_period = Column(Integer)
-    plan = Column(String)
-
-class ChangeLog(Base):
-    __tablename__ = 'changes_log'
-    id = Column(Integer, primary_key=True)
-    customer_id = Column(Integer)
-    change_date = Column(Date)
-
 engine = create_engine('sqlite:///subscriptions.db')
 Base.metadata.create_all(engine)
 
@@ -100,8 +81,9 @@ def get_customers():
 
 def display_customers():
     customers = session.query(Customer).all()
+    customer_data = []
     for customer in customers:
-        st.write({
+        customer_data.append({
             "ID": customer.id,
             "Name": customer.name,
             "Contact": customer.contact,
@@ -109,8 +91,10 @@ def display_customers():
             "Remaining Changes": customer.remaining_changes,
             "Validity Period": customer.validity_period,
             "Plan": customer.plan,
-            "Family Members": json.loads(customer.family_members) if customer.family_members else []
+            "Family Members": ", ".join(json.loads(customer.family_members)) if customer.family_members else ""
         })
+    df = pd.DataFrame(customer_data)
+    st.dataframe(df)
 
 # Streamlit UI
 st.title("Tempered Glass Subscription Service")
