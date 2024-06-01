@@ -1,8 +1,8 @@
 import sys
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Column, Integer, String, Date, BLOB, JSON
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from database_setup import Customer, ChangeLog, engine
 from datetime import date, timedelta
 import streamlit as st
 import json
@@ -10,7 +10,29 @@ import json
 # Add the current directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Database connection
+# Database setup
+Base = declarative_base()
+
+class Customer(Base):
+    __tablename__ = 'customers'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    contact = Column(String)
+    photo_id = Column(BLOB)
+    subscription_start_date = Column(Date)
+    remaining_changes = Column(Integer)
+    family_members = Column(JSON)
+    validity_period = Column(Integer)
+
+class ChangeLog(Base):
+    __tablename__ = 'changes_log'
+    id = Column(Integer, primary_key=True)
+    customer_id = Column(Integer)
+    change_date = Column(Date)
+
+engine = create_engine('sqlite:///subscriptions.db')
+Base.metadata.create_all(engine)
+
 Session = sessionmaker(bind=engine)
 session = Session()
 
@@ -63,6 +85,19 @@ def get_customers():
         customer_list[customer.id] = customer.name
     return customer_list
 
+def display_customers():
+    customers = session.query(Customer).all()
+    for customer in customers:
+        st.write({
+            "ID": customer.id,
+            "Name": customer.name,
+            "Contact": customer.contact,
+            "Subscription Start Date": customer.subscription_start_date,
+            "Remaining Changes": customer.remaining_changes,
+            "Validity Period": customer.validity_period,
+            "Family Members": json.loads(customer.family_members)
+        })
+
 # Streamlit UI
 st.title("Tempered Glass Subscription Service")
 
@@ -86,22 +121,15 @@ if choice == "Register Customer":
 elif choice == "Log Glass Change":
     st.subheader("Log a Glass Change")
     customers = get_customers()
-    customer_id = st.selectbox("Select Customer", options=list(customers.keys()), format_func=lambda x: customers[x])
-    family_member_id = st.number_input("Family Member ID (if applicable)", min_value=0)
+    if customers:
+        customer_id = st.selectbox("Select Customer", options=list(customers.keys()), format_func=lambda x: customers[x])
+        family_member_id = st.number_input("Family Member ID (if applicable)", min_value=0)
 
-    if st.button("Log Change"):
-        verify_and_log_change(customer_id, family_member_id if family_member_id != 0 else None)
+        if st.button("Log Change"):
+            verify_and_log_change(customer_id, family_member_id if family_member_id != 0 else None)
+    else:
+        st.warning("No customers registered yet.")
 
 elif choice == "View Customers":
     st.subheader("Registered Customers")
-    customer_details = session.query(Customer).all()
-    for customer in customer_details:
-        st.write({
-            "ID": customer.id,
-            "Name": customer.name,
-            "Contact": customer.contact,
-            "Subscription Start Date": customer.subscription_start_date,
-            "Remaining Changes": customer.remaining_changes,
-            "Validity Period": customer.validity_period,
-            "Family Members": json.loads(customer.family_members)
-        })
+    display_customers()
