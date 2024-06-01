@@ -1,15 +1,14 @@
 import sys
 import os
-
-# Add the current directory to the Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import Customer, ChangeLog, engine
 from datetime import date, timedelta
 import streamlit as st
 import json
+
+# Add the current directory to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Database connection
 Session = sessionmaker(bind=engine)
@@ -57,10 +56,17 @@ def verify_and_log_change(customer_id, family_member_id=None):
     session.commit()
     st.success("Glass change logged successfully")
 
+def get_customers():
+    customers = session.query(Customer).all()
+    customer_list = {}
+    for customer in customers:
+        customer_list[customer.id] = customer.name
+    return customer_list
+
 # Streamlit UI
 st.title("Tempered Glass Subscription Service")
 
-menu = ["Register Customer", "Log Glass Change"]
+menu = ["Register Customer", "Log Glass Change", "View Customers"]
 choice = st.sidebar.selectbox("Menu", menu)
 
 if choice == "Register Customer":
@@ -79,8 +85,23 @@ if choice == "Register Customer":
 
 elif choice == "Log Glass Change":
     st.subheader("Log a Glass Change")
-    customer_id = st.number_input("Customer ID", min_value=1)
+    customers = get_customers()
+    customer_id = st.selectbox("Select Customer", options=list(customers.keys()), format_func=lambda x: customers[x])
     family_member_id = st.number_input("Family Member ID (if applicable)", min_value=0)
 
     if st.button("Log Change"):
         verify_and_log_change(customer_id, family_member_id if family_member_id != 0 else None)
+
+elif choice == "View Customers":
+    st.subheader("Registered Customers")
+    customer_details = session.query(Customer).all()
+    for customer in customer_details:
+        st.write({
+            "ID": customer.id,
+            "Name": customer.name,
+            "Contact": customer.contact,
+            "Subscription Start Date": customer.subscription_start_date,
+            "Remaining Changes": customer.remaining_changes,
+            "Validity Period": customer.validity_period,
+            "Family Members": json.loads(customer.family_members)
+        })
