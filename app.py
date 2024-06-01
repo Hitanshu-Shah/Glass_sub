@@ -45,7 +45,7 @@ def send_email_notification(to_email, subject, message):
     except Exception as e:
         print(f"Failed to send email: {e}")
 
-def register_customer(name, contact, photo, family_members, plan):
+def register_customer(name, email, contact, photo, family_members, plan):
     subscription_start_date = date.today()
     
     # Set remaining changes and validity period based on the selected plan
@@ -163,14 +163,15 @@ choice = st.sidebar.selectbox("Menu", menu)
 if choice == "Register Customer":
     st.subheader("Register a New Customer")
     name = st.text_input("Name")
+    email = st.text_input("Email")  # Prompt for email address
     contact = st.text_input("Contact")
     photo = st.file_uploader("Upload Photo ID", type=["jpg", "jpeg", "png"])
     family_members = st.text_area("Family Members (comma-separated)")
     plan = st.selectbox("Select Plan", ["3 Glass Changes in 3 Months - 3000 Rs", "6 Glass Changes in 6 Months - 6000 Rs"])
 
     if st.button("Register"):
-        if name and contact and plan:
-            register_customer(name, contact, photo.read() if photo else None, family_members, plan)
+        if name and email and contact and plan:
+            register_customer(name, email, contact, photo.read() if photo else None, family_members, plan)
         else:
             st.error("Please fill all fields")
 
@@ -195,7 +196,7 @@ elif choice == "Backup Database":
     if st.button("Backup Now"):
         try:
             db_path = 'subscriptions.db'
-            repo_path = 'path/to/your/local/repo'
+            repo_path = 'path/to/your/local/repo'  # Update this with your actual local repo path
             commit_message = f'Backup on {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
             backup_database_to_github(db_path, repo_path, commit_message)
             st.success("Database backup successful!")
