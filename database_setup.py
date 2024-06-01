@@ -1,8 +1,5 @@
 from sqlalchemy import create_engine, Column, Integer, String, Date, BLOB, JSON
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from datetime import date, timedelta
-import json
 
 Base = declarative_base()
 
@@ -11,10 +8,10 @@ class Customer(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     contact = Column(String)
-    photo_id = Column(BLOB)
+    photo_id = Column(BLOB, nullable=True)
     subscription_start_date = Column(Date)
     remaining_changes = Column(Integer)
-    family_members = Column(JSON)
+    family_members = Column(JSON, nullable=True)
     validity_period = Column(Integer)
     plan = Column(String)
 
@@ -24,8 +21,9 @@ class ChangeLog(Base):
     customer_id = Column(Integer)
     change_date = Column(Date)
 
-engine = create_engine('sqlite:///subscriptions.db')
-Base.metadata.create_all(engine)
+def setup_database():
+    engine = create_engine('sqlite:///subscriptions.db')
+    Base.metadata.create_all(engine)
 
-Session = sessionmaker(bind=engine)
-session = Session()
+if __name__ == "__main__":
+    setup_database()
