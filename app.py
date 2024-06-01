@@ -24,8 +24,8 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 def send_email_notification(to_email, subject, message):
-    from_email = "your-email@gmail.com"
-    from_password = "your-email-password"
+    from_email = "glasschangeaccess@gmail.com"
+    from_password = "Glasschange@123"
     
     msg = MIMEMultipart()
     msg['From'] = from_email
