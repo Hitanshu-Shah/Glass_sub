@@ -18,10 +18,10 @@ class Customer(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     contact = Column(String)
-    photo_id = Column(BLOB)
+    photo_id = Column(BLOB, nullable=True)
     subscription_start_date = Column(Date)
     remaining_changes = Column(Integer)
-    family_members = Column(JSON)
+    family_members = Column(JSON, nullable=True)
     validity_period = Column(Integer)
     plan = Column(String)
 
@@ -48,14 +48,14 @@ def register_customer(name, contact, photo, family_members, plan):
         remaining_changes = 6
         validity_period = 180
 
-    family_members_list = [member.strip() for member in family_members.split(',')]
-    family_members_json = json.dumps(family_members_list)  # Ensure it's JSON formatted
+    family_members_list = [member.strip() for member in family_members.split(',')] if family_members else []
+    family_members_json = json.dumps(family_members_list) if family_members_list else None
 
     try:
         new_customer = Customer(
             name=name,
             contact=contact,
-            photo_id=photo,
+            photo_id=photo if photo else None,
             subscription_start_date=subscription_start_date,
             remaining_changes=remaining_changes,
             family_members=family_members_json,
@@ -109,7 +109,7 @@ def display_customers():
             "Remaining Changes": customer.remaining_changes,
             "Validity Period": customer.validity_period,
             "Plan": customer.plan,
-            "Family Members": json.loads(customer.family_members)
+            "Family Members": json.loads(customer.family_members) if customer.family_members else []
         })
 
 # Streamlit UI
@@ -127,8 +127,8 @@ if choice == "Register Customer":
     plan = st.selectbox("Select Plan", ["3 Glass Changes in 3 Months - 3000 Rs", "6 Glass Changes in 6 Months - 6000 Rs"])
 
     if st.button("Register"):
-        if name and contact and photo and family_members and plan:
-            register_customer(name, contact, photo.read(), family_members, plan)
+        if name and contact and plan:
+            register_customer(name, contact, photo.read() if photo else None, family_members, plan)
         else:
             st.error("Please fill all fields")
 
