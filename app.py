@@ -113,8 +113,11 @@ if choice == "Register Customer":
 
     if st.button("Register"):
         if name and contact and photo and family_members:
-            family_members_list = json.loads(family_members)
-            register_customer(name, contact, photo.read(), family_members_list)
+            try:
+                family_members_list = json.loads(family_members)
+                register_customer(name, contact, photo.read(), family_members_list)
+            except json.JSONDecodeError:
+                st.error("Invalid JSON format for family members. Please check your input.")
         else:
             st.error("Please fill all fields")
 
