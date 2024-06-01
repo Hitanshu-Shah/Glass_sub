@@ -48,20 +48,24 @@ def register_customer(name, contact, photo, family_members, plan):
         validity_period = 180
 
     family_members_list = [member.strip() for member in family_members.split(',')]
+    family_members_json = json.dumps(family_members_list)  # Ensure it's JSON formatted
 
-    new_customer = Customer(
-        name=name,
-        contact=contact,
-        photo_id=photo,
-        subscription_start_date=subscription_start_date,
-        remaining_changes=remaining_changes,
-        family_members=family_members_list,
-        validity_period=validity_period,
-        plan=plan
-    )
-    session.add(new_customer)
-    session.commit()
-    st.success("Customer registered successfully!")
+    try:
+        new_customer = Customer(
+            name=name,
+            contact=contact,
+            photo_id=photo,
+            subscription_start_date=subscription_start_date,
+            remaining_changes=remaining_changes,
+            family_members=family_members_json,
+            validity_period=validity_period,
+            plan=plan
+        )
+        session.add(new_customer)
+        session.commit()
+        st.success("Customer registered successfully!")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
 
 def verify_and_log_change(customer_id, family_member_id=None):
     customer = session.query(Customer).filter_by(id=customer_id).first()
@@ -104,7 +108,7 @@ def display_customers():
             "Remaining Changes": customer.remaining_changes,
             "Validity Period": customer.validity_period,
             "Plan": customer.plan,
-            "Family Members": customer.family_members
+            "Family Members": json.loads(customer.family_members)
         })
 
 # Streamlit UI
