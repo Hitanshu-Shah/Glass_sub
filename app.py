@@ -42,8 +42,10 @@ def send_email_notification(to_email, subject, message):
         server.sendmail(from_email, to_email, text)
         server.quit()
         print("Email sent successfully")
+        return True
     except Exception as e:
         print(f"Failed to send email: {e}")
+        return False
 
 def register_customer(name, email, contact, photo, family_members, plan):
     subscription_start_date = date.today()
@@ -62,7 +64,7 @@ def register_customer(name, email, contact, photo, family_members, plan):
     try:
         new_customer = Customer(
             name=name,
-            contact=contact,
+            contact=email,  # Store the email as the contact information
             photo_id=photo if photo else None,
             subscription_start_date=subscription_start_date,
             remaining_changes=remaining_changes,
@@ -101,9 +103,12 @@ def verify_and_log_change(customer_id, family_member_id=None):
     # Send email notification
     subject = "Glass Change Notification"
     message = f"Dear {customer.name},\n\nYour glass has been changed successfully. You have {customer.remaining_changes} changes left in your current subscription plan.\n\nBest regards,\nYour Company Name"
-    send_email_notification(customer.contact, subject, message)
-
-    st.success("Glass change logged successfully and notification sent!")
+    
+    email_sent = send_email_notification(customer.contact, subject, message)
+    if email_sent:
+        st.success("Glass change logged successfully and notification sent!")
+    else:
+        st.error("Glass change logged but failed to send notification!")
 
 def get_customers():
     customers = session.query(Customer).all()
